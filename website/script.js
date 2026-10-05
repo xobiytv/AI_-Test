@@ -43,7 +43,7 @@ function tick() {
   cd.m.textContent = pad(Math.floor((s % 3600) / 60));
   cd.s.textContent = pad(s % 60);
   if (diff === 0) {
-    document.querySelector("#countdown p").textContent = "Tadbir boshlandi!";
+    document.querySelector("#countdown p span").textContent = "Tadbir boshlandi!";
     clearInterval(timer);
   }
 }
@@ -61,7 +61,58 @@ const io = new IntersectionObserver(
     }),
   { threshold: 0.15 }
 );
-document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+document.querySelectorAll(".reveal").forEach((el) => {
+  // Bir guruhdagi elementlar ketma-ket paydo bo'lishi uchun
+  const siblings = [...el.parentElement.children].filter((c) => c.classList.contains("reveal"));
+  el.style.setProperty("--d", `${Math.min(siblings.indexOf(el), 5) * 0.08}s`);
+  io.observe(el);
+});
+
+// ===== Kartalarda kursor yorug'ligi =====
+document.querySelectorAll(".value").forEach((card) =>
+  card.addEventListener("pointermove", (e) => {
+    const r = card.getBoundingClientRect();
+    card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    card.style.setProperty("--my", `${e.clientY - r.top}px`);
+  })
+);
+
+// ===== Dastur tablari =====
+const tabs = document.querySelectorAll(".tab");
+tabs.forEach((tab) =>
+  tab.addEventListener("click", () => {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", on);
+      document.getElementById(t.dataset.tab).classList.toggle("active", on);
+    });
+  })
+);
+
+// ===== Galereya lightbox =====
+const lightbox = document.getElementById("lightbox");
+const lbImg = lightbox.querySelector("img");
+document.querySelectorAll(".bento figure").forEach((fig) =>
+  fig.addEventListener("click", () => {
+    lbImg.src = fig.dataset.full;
+    lbImg.alt = fig.querySelector("img").alt;
+    lightbox.hidden = false;
+  })
+);
+const closeLightbox = () => (lightbox.hidden = true);
+lightbox.addEventListener("click", (e) => e.target !== lbImg && closeLightbox());
+document.addEventListener("keydown", (e) => e.key === "Escape" && closeLightbox());
+
+// ===== Mobil CTA forma ko'ringanda yashiriladi =====
+// (hero yoki forma ekranda bo'lsa, tugma kerak emas)
+const stickyCta = document.querySelector(".sticky-cta");
+const ctaBlockers = new Set();
+const ctaIo = new IntersectionObserver((entries) => {
+  entries.forEach((e) => (e.isIntersecting ? ctaBlockers.add(e.target) : ctaBlockers.delete(e.target)));
+  stickyCta.classList.toggle("hide", ctaBlockers.size > 0);
+}, { threshold: 0.1 });
+[".hero__cta", "#register"].forEach((sel) => ctaIo.observe(document.querySelector(sel)));
 
 // ===== Ro'yxatdan o'tish formasi =====
 const form = document.getElementById("regForm");
